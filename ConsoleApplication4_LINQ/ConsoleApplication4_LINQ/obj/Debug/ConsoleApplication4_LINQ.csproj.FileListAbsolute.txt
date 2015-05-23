@@ -1,0 +1,6 @@
+c:\users\famg\documents\visual studio 2013\Projects\ConsoleApplication4_LINQ\ConsoleApplication4_LINQ\bin\Debug\ConsoleApplication4_LINQ.exe.config
+c:\users\famg\documents\visual studio 2013\Projects\ConsoleApplication4_LINQ\ConsoleApplication4_LINQ\bin\Debug\ConsoleApplication4_LINQ.exe
+c:\users\famg\documents\visual studio 2013\Projects\ConsoleApplication4_LINQ\ConsoleApplication4_LINQ\bin\Debug\ConsoleApplication4_LINQ.pdb
+c:\users\famg\documents\visual studio 2013\Projects\ConsoleApplication4_LINQ\ConsoleApplication4_LINQ\obj\Debug\ConsoleApplication4_LINQ.csprojResolveAssemblyReference.cache
+c:\users\famg\documents\visual studio 2013\Projects\ConsoleApplication4_LINQ\ConsoleApplication4_LINQ\obj\Debug\ConsoleApplication4_LINQ.exe
+c:\users\famg\documents\visual studio 2013\Projects\ConsoleApplication4_LINQ\ConsoleApplication4_LINQ\obj\Debug\ConsoleApplication4_LINQ.pdb
