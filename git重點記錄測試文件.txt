@@ -1,0 +1,14 @@
+使用過的指令
+設定相關參數
+Git config --global user.name “chris”
+Git config –global user.email “e8859487@gmail.com” 
+
+
+Git init			於當前目錄初始化
+Git add file1 file2
+Git status	加入檔案
+查看目前檔案狀態
+Git commit –m “MSG”
+Git diff	送交，加上註解
+查看上次commit後相差之處
+Git log	查看歷史
