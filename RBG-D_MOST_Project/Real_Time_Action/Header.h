@@ -86,60 +86,60 @@ int stateTransfer(int shijian, int states)
 	int nextstates = STATUS_NONE;
 	if (shijian == INCIDENT_NONE)
 		nextstates = states; //事件為0，保持原始狀態
-	if (states == 0)       //前一個狀態為0，不能用這個轉換。
-		nextstates = 0;
+	if (states == STATUS_NONE)       //前一個狀態為0，不能用這個轉換。
+		nextstates = STATUS_NONE;
 	
-	if (states == 2)
+	if (states == STATUS_WALK)
 	{
-		if (shijian == 5)
-			nextstates = 3;
-		else if (shijian == 1)
-			nextstates = 1;
-		else if (shijian == 2)
-			nextstates = 2;
+		if (shijian == INCIDENT_FALLDOWN)
+			nextstates = STATUS_FAILDOWN;
+		else if (shijian == INCIDENT_STOP)
+			nextstates = STATUS_STAND;
+		else if (shijian == INCIDENT_WALK)
+			nextstates = STATUS_WALK;
 	}
 
-	if (states == 3)
+	if (states == STATUS_FAILDOWN)
 	{
-		if (shijian == 4)
-			nextstates = 1;
-		else if (shijian == 3)
-			nextstates = 4;
-		else if (shijian == 5)
-			nextstates = 3;
+		if (shijian == INCIDENT_STANDUP)
+			nextstates = STATUS_STAND;
+		else if (shijian == INCIDENT_SIT_UP)
+			nextstates = STATUS_SITDOWN;
+		else if (shijian == INCIDENT_FALLDOWN)
+			nextstates = STATUS_FAILDOWN;
 	}
 
-	if (states == 4)
+	if (states == STATUS_SITDOWN)
 	{
-		if (shijian == 4)
-			nextstates = 1;
-		else if (shijian == 5)
-			nextstates = 3;
-		else if (shijian == 7)
-			nextstates = 5;
-		else if (shijian == 6 || shijian == 3)
-			nextstates = 4;
+		if (shijian == INCIDENT_STANDUP)
+			nextstates = STATUS_STAND;
+		else if (shijian == INCIDENT_FALLDOWN)
+			nextstates = STATUS_FAILDOWN;
+		else if (shijian == INCIDENT_LAYDOWN)
+			nextstates = STATUS_LAYDOWN;
+		else if (shijian == INCIDENT_SIT_DOWN || shijian == INCIDENT_SIT_UP)
+			nextstates = STATUS_SITDOWN;
 	}
 
-	if (states == 5)
+	if (states == STATUS_LAYDOWN)
 	{
-		if (shijian == 3)
-			nextstates = 4;
-		if (shijian == 7)
-			nextstates = 5;
+		if (shijian == INCIDENT_SIT_UP)
+			nextstates = STATUS_SITDOWN;
+		if (shijian == INCIDENT_LAYDOWN)
+			nextstates = STATUS_LAYDOWN;
 	}
-	if (states == 1)
+	if (states == STATUS_STAND)
 	{
-		if (shijian == 2)
-			nextstates = 2;
-		else if (shijian == 6)
-			nextstates = 4;
-		else if (shijian == 4)
-			nextstates = 1;
-		else if (shijian == 5)
-			nextstates = 3;
-		else if (shijian == 1)
-			nextstates = 1;
+		if (shijian == INCIDENT_WALK)
+			nextstates = STATUS_WALK;
+		else if (shijian == INCIDENT_SIT_DOWN)
+			nextstates = STATUS_SITDOWN;
+		else if (shijian == INCIDENT_STANDUP)
+			nextstates = STATUS_STAND;
+		else if (shijian == INCIDENT_FALLDOWN)
+			nextstates = STATUS_FAILDOWN;
+		else if (shijian == INCIDENT_STOP)
+			nextstates = STATUS_STAND;
 	}
 	return nextstates;
 }
