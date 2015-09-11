@@ -21,7 +21,7 @@
 using namespace std;
 using namespace nite; 
 //跌倒的閾值 應該會被蓋掉?
-int dieyuzhi = 700;
+int fallDownThreshold = 700;
 
 //動作事件1:停止 2走 3坐起來 4站起來 5跌倒 6坐下 7躺下 
 typedef enum {
@@ -189,7 +189,7 @@ int unnormalzhenc(int shijian, int states)
 
 
 
-//事件偵測
+//事件偵測  (沒用到!!)
 //eventsj=eventzhence(fheadC,ftorsoC,fhead,ftorso,humanhigh,zhixgao，nowhigh，zhixinhigh); 
 //shijian-> 1:停止 2走 3坐起來 4站起來 5跌倒 6坐下 7躺下 
 int eventzhence(cv::Point3f headq, cv::Point3f quxinq, cv::Point3f head, cv::Point3f quxin, float shenhigh, float zxhih, float dih, float nzxhigh) //(前一幀,後一幀,身高,頭距離地面的高度)
@@ -229,36 +229,36 @@ int eventzhence(cv::Point3f headq, cv::Point3f quxinq, cv::Point3f head, cv::Poi
 }
 
 //shijian-> 1:停止 2走 3坐起來 4站起來 5跌倒 6坐下 7躺下 
-int eventDetect(cv::Point3f head_Pre, cv::Point3f quxin_Pre, cv::Point3f head, cv::Point3f quxin, cv::Point3f head_Ini, cv::Point3f quxin_Ini, cv::Point3f neckkk) //(前一幀,後一幀,初始幀)
+int eventDetect(cv::Point3f head_Pre, cv::Point3f torsol_Pre, cv::Point3f head, cv::Point3f torsol, cv::Point3f head_Ini, cv::Point3f torsol_Ini, cv::Point3f neckkk) //(前一幀,後一幀,初始幀)
 {
 	int shijian = INCIDENT_NONE;
 
-	if (head_Ini.y - head.y > 200 && quxin_Ini.y - quxin.y > 200) //第一個分支點.
+	if (head_Ini.y - head.y > 200 && torsol_Ini.y - torsol.y > 200) //第一個分支點  :初始與現在的頭與身 Dy 大於200
 	{
-		if (head.y - head_Pre.y > 35 && quxin.y - quxin_Pre.y > 35) //第三個分支點.20 40//  
+		if (head.y - head_Pre.y > 35 && torsol.y - torsol_Pre.y > 35) //第三個分支點.20 40//  前後頭身Dy 大於35
 		{
-			if (head_Ini.y - head.y > 300 && quxin_Ini.y - quxin.y > 300)
+			if (head_Ini.y - head.y > 300 && torsol_Ini.y - torsol.y > 300)
 				shijian = INCIDENT_SIT_UP; //坐起來
 		}
-		else if (head_Ini.y - head.y > dieyuzhi &&quxin_Ini.y - quxin.y > dieyuzhi)
+		else if (head_Ini.y - head.y > fallDownThreshold &&torsol_Ini.y - torsol.y > fallDownThreshold)//跌倒的判斷式很奇怪
 		{
 			if (head.y - neckkk.y > 60)
 				shijian = INCIDENT_FALLDOWN;//跌倒
 		}
-		else if (head.y - quxin.y > 200)
+		else if (head.y - torsol.y > 200)
 		{
-			if (head_Ini.y - head.y > 300 && quxin_Ini.y - quxin.y > 300 && head.y - head_Pre.y < -30 && quxin.y - quxin_Pre.y < -30)
+			if (head_Ini.y - head.y > 300 && torsol_Ini.y - torsol.y > 300 && head.y - head_Pre.y < -30 && torsol.y - torsol_Pre.y < -30)
 				shijian = INCIDENT_SIT_DOWN; //坐下
 		}
 		else
 			shijian = INCIDENT_LAYDOWN; //躺下  
 	}
-	else
+	else//頭與身 Dy 小於200
 	{
-		if (head.y - head_Pre.y > 100 && quxin.y - quxin_Pre.y > 100)
+		if (head.y - head_Pre.y > 100 && torsol.y - torsol_Pre.y > 100)
 			shijian = INCIDENT_STANDUP; //站起來
 		else if ((head_Pre.x - head.x)*(head_Pre.x - head.x) + (head_Pre.z - head.z)*(head_Pre.z - head.z) > 3000 && 
-			     (quxin_Pre.x - quxin.x)*(quxin_Pre.x - quxin.x) + (quxin_Pre.z - quxin.z)*(quxin_Pre.z - quxin.z) > 3000) //第二個分支點.
+			     (torsol_Pre.x - torsol.x)*(torsol_Pre.x - torsol.x) + (torsol_Pre.z - torsol.z)*(torsol_Pre.z - torsol.z) > 3000) //第二個分支點.
 			shijian = INCIDENT_WALK;//走
 		else
 			shijian = INCIDENT_STOP; //停止
@@ -323,6 +323,25 @@ void automendG(int events, int n) // (當前事件，時間)
 	}
 }
 
+
+
+
+//顯示出現在狀態
+void displayState(int nextState, int nowState){
+	if (nextState != nowState)
+	{
+		if (nextState == 1)
+			cout << "目前狀態: " << "站著" << endl;
+		if (nextState == 2)
+			cout << "目前狀態: " << "走著" << endl;
+		if (nextState == 3)
+			cout << "目前狀態: " << "跌倒" << endl;
+		if (nextState == 4)
+			cout << "目前狀態: " << "坐著" << endl;
+		if (nextState == 5)
+			cout << "目前狀態: " << "躺著" << endl;
+	}
+}
 #endif // !mainHeader
 
 

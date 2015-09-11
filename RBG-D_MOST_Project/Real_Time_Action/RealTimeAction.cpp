@@ -1,5 +1,5 @@
 ﻿//===========================================================================================================
-//= 程式撰寫人 韓雲  ， 2015/09聖方修改                                                                             =
+//= 程式撰寫人 韓雲  ， 2015/09聖方修改                                                                     =
 //= 即時動作識別：識別的動作是（走、跌倒、站起來、坐下、躺下、彎腰）。                                      =
 //=                                                                                                         =
 //===========================================================================================================
@@ -14,19 +14,19 @@ int main(int argc, char **argv)
 	time_t zanql = clock();//站起來 時刻
 	time_t firsttime = clock();//程式啟動 時刻
 
-	time_t  zuoq = clock(); //上一次坐下 時刻
-	time_t  zqlq = clock(); //上一次坐起來  表示上次的值。
+	time_t  zuo_Pre = clock(); //上一次坐下 時刻
+	time_t  zql_Pre = clock(); //上一次坐起來  表示上次的值。
 
 	int armLen = 0; //手臂張開的長度
 	int DSTimes = 0; //偵測的初始骨架次數。
-	int Nowstate = 0;
-	int nextstate = 0;//定義狀態變數,狀態都是未知的；
+	int nowState = 0;
+	int nextState = 0;//定義狀態變數,狀態都是未知的；
 	//1：站立；2：走著；3：跌倒；4：坐下；5：躺； 其他均為非定義狀態。
 
 	//ftorso_Ini初始值；ftorso：當前的值；ftorsoC:當前的前一時刻的值
-	cv::Point3f ftorso_Ini, ftorso, ftorsoC;
+	cv::Point3f ftorso_Ini, ftorso, ftorso_Pre;
 	//fhead_Ini初始值；fhead：當前的值；fheadC:當前的前一時刻的值
-	cv::Point3f fhead_Ini, fhead, fheadC;
+	cv::Point3f fhead_Ini, fhead, fhead_Pre;
 	cv::Point3f  neck; //脖子
 
 	//用於初始統計連續N幀的平均的骨架資料，用於初始高度及跌倒參數確定。
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 	int event_Pre = 0; //事件 上一次發生的事件。
 
 
-	int cishu = 0;//檢測的次數；
+	int cishu = 0;//檢測的次數；  (用來當作delay)
 	int detectFlag = 0;//該變數表示是否是第一次檢測到骨架(實際上是假定第一次偵測到骨架時，人是站立的。目的是獲取人的高度)。
 
 #pragma endregion
@@ -49,6 +49,7 @@ int main(int argc, char **argv)
 	if (NiTE::initialize() != STATUS_OK)
 	{
 		cerr << "NiTE initial error" << endl;
+		system("PAUSE");
 		return -1;
 	}
 
@@ -57,6 +58,7 @@ int main(int argc, char **argv)
 	if (mUserTracker.create() != STATUS_OK)
 	{
 		cerr << "Can't create user tracker" << endl;
+		system("PAUSE");
 		return -1;
 	}
 	mUserTracker.setSkeletonSmoothingFactor(0.8);
@@ -88,11 +90,6 @@ int main(int argc, char **argv)
 			const nite::Array<UserData>& aUsers = mUserFrame.getUsers();
 			for (int i = 0; i < aUsers.getSize(); ++i)
 			{
-				//獲取地板
-				//NitePoint3f planePoint, planeNormal;
-				//planePoint = mUserFrame.getFloor().point;
-			    //planeNormal = mUserFrame.getFloor().normal;
-
 				const UserData& rUser = aUsers[i];
 
 				// check user status
@@ -168,8 +165,9 @@ int main(int argc, char **argv)
 #pragma endregion
 
 						//獲取初始值
-						if (detectFlag == 0)
+						if (detectFlag == 0)//第一次偵測
 						{
+#pragma region 初始化Algorithm
 							DSTimes++;
 							if (DSTimes == 1)
 							{
@@ -181,13 +179,13 @@ int main(int argc, char **argv)
 								ftorsof.y = aJoints[8].getPosition().y;
 								ftorsof.z = aJoints[8].getPosition().z;
 
-								leftsf.x = aJoints[2].getPosition().x;
-								leftsf.y = aJoints[2].getPosition().y;
-								leftsf.z = aJoints[2].getPosition().z;
+								//	leftsf.x = aJoints[2].getPosition().x;
+								//	leftsf.y = aJoints[2].getPosition().y;
+								//	leftsf.z = aJoints[2].getPosition().z;
 
-								rightsf.x = aJoints[3].getPosition().x;
-								rightsf.y = aJoints[3].getPosition().y;
-								rightsf.z = aJoints[3].getPosition().z;
+								//	rightsf.x = aJoints[3].getPosition().x;
+								//	rightsf.y = aJoints[3].getPosition().y;
+								//	rightsf.z = aJoints[3].getPosition().z;
 
 								lefthand.x = aJoints[6].getPosition().x;
 								lefthand.y = aJoints[6].getPosition().y;
@@ -196,28 +194,28 @@ int main(int argc, char **argv)
 								righthand.x = aJoints[7].getPosition().x;
 								righthand.y = aJoints[7].getPosition().y;
 								righthand.z = aJoints[7].getPosition().z;
-								//為什麼要乘0.55?
+								//左右手距離*0.55。 為什麼要乘0.55?
 								armLen = sqrt((lefthand.x - righthand.x)*(lefthand.x - righthand.x) +
-									(lefthand.y - righthand.y)*(lefthand.y - righthand.y) + 
+									(lefthand.y - righthand.y)*(lefthand.y - righthand.y) +
 									(lefthand.z - righthand.z)*(lefthand.z - righthand.z))*0.55;
 							}
-							else if (DSTimes>1 && DSTimes <= 200)	//偵測次數於200次以內
+							else if (DSTimes > 1 && DSTimes <= 200)	//偵測次數於200次以內
 							{
-								fheadf.x = fheadf.x + aJoints[0].getPosition().x;//站立時的頭的位置；
+								fheadf.x = fheadf.x + aJoints[0].getPosition().x;//站立時的頭的位置(累加)；
 								fheadf.y = fheadf.y + aJoints[0].getPosition().y;
 								fheadf.z = fheadf.z + aJoints[0].getPosition().z;
 
-								ftorsof.x = ftorsof.x + aJoints[8].getPosition().x;//站立時的質心位置；
+								ftorsof.x = ftorsof.x + aJoints[8].getPosition().x;//站立時的質心位置(累加)；
 								ftorsof.y = ftorsof.y + aJoints[8].getPosition().y;
 								ftorsof.z = ftorsof.z + aJoints[8].getPosition().z;
 
-								leftsf.x = aJoints[2].getPosition().x;
-								leftsf.y = aJoints[2].getPosition().y;
-								leftsf.z = aJoints[2].getPosition().z;
+								//	leftsf.x = aJoints[2].getPosition().x;
+								//	leftsf.y = aJoints[2].getPosition().y;
+								//	leftsf.z = aJoints[2].getPosition().z;
 
-								rightsf.x = aJoints[3].getPosition().x;
-								rightsf.y = aJoints[3].getPosition().y;
-								rightsf.z = aJoints[3].getPosition().z;
+								//	rightsf.x = aJoints[3].getPosition().x;
+								//	rightsf.y = aJoints[3].getPosition().y;
+								//	rightsf.z = aJoints[3].getPosition().z;
 
 								lefthand.x = aJoints[6].getPosition().x;
 								lefthand.y = aJoints[6].getPosition().y;
@@ -227,62 +225,66 @@ int main(int argc, char **argv)
 								righthand.y = aJoints[7].getPosition().y;
 								righthand.z = aJoints[7].getPosition().z;
 								//?????
-								int cc = sqrt((lefthand.x - righthand.x)*(lefthand.x - righthand.x) + 
-									(lefthand.y - righthand.y)*(lefthand.y - righthand.y) + 
+								int cc = sqrt((lefthand.x - righthand.x)*(lefthand.x - righthand.x) +
+									(lefthand.y - righthand.y)*(lefthand.y - righthand.y) +
 									(lefthand.z - righthand.z)*(lefthand.z - righthand.z))*0.55;
 
-								cout << "測試下身長：" << cc << endl;
+								//	cout << "測試下身長：" << cc << endl;
 								armLen = armLen + cc;
 							}
 							if (DSTimes >= 200)//計算頭、身初始值、跌倒閥值
 							{
 								detectFlag = 1;
+								fhead_Ini.x = fheadf.x / DSTimes;
+								fhead_Ini.y = fheadf.y / DSTimes;
+								fhead_Ini.z = fheadf.z / DSTimes;
 
 								ftorso_Ini.x = ftorsof.x / DSTimes;
 								ftorso_Ini.y = ftorsof.y / DSTimes;
 								ftorso_Ini.z = ftorsof.z / DSTimes;
 
-								fhead_Ini.x = fheadf.x / DSTimes;
-								fhead_Ini.y = fheadf.y / DSTimes;
-								fhead_Ini.z = fheadf.z / DSTimes;
+								fallDownThreshold = ((int)((armLen / DSTimes) / 100) * 100);
 
-								dieyuzhi = ((int)((armLen / DSTimes) / 100) * 100);
+								cout << "跌倒的閾值：" << fallDownThreshold << endl;
 
-								cout << "跌倒的閾值：" << dieyuzhi << endl;
+								//計算頭 身當前的值
+								fhead.x = aJoints[JOINT_HEAD].getPosition().x;
+								fhead.y = aJoints[JOINT_HEAD].getPosition().y;
+								fhead.z = aJoints[JOINT_HEAD].getPosition().z;
+								fhead_Pre = fhead;
+
+								ftorso.x = aJoints[JOINT_TORSO].getPosition().x;
+								ftorso.y = aJoints[JOINT_TORSO].getPosition().y;
+								ftorso.z = aJoints[JOINT_TORSO].getPosition().z;
+								ftorso_Pre = ftorso;
+
+								cout << "第" << DSTimes << "次" << "的頭部h：" << fhead.y << endl;
 							}
+#pragma endregion
 
-							fhead.x = aJoints[JOINT_HEAD].getPosition().x;
-							fhead.y = aJoints[JOINT_HEAD].getPosition().y;
-							fhead.z = aJoints[JOINT_HEAD].getPosition().z;
-							fheadC = fhead;
-
-							ftorso.x = aJoints[JOINT_TORSO].getPosition().x;
-							ftorso.y = aJoints[JOINT_TORSO].getPosition().y;
-							ftorso.z = aJoints[JOINT_TORSO].getPosition().z;
-							ftorsoC = ftorso;
-
-							cout << "第" << DSTimes << "次" << "的頭部h：" << fhead.y << endl;
 						}
 						else
 						{  
 							if (cishu == 8)
 							{
 								cishu = 0;
+#pragma region MainAlgorithm 
+								fhead.x = aJoints[0].getPosition().x;
+								fhead.y = aJoints[0].getPosition().y;
+								fhead.z = aJoints[0].getPosition().z;
 
 								ftorso.x = aJoints[8].getPosition().x;
 								ftorso.y = aJoints[8].getPosition().y;
 								ftorso.z = aJoints[8].getPosition().z;
 
-								fhead.x = aJoints[0].getPosition().x;
-								fhead.y = aJoints[0].getPosition().y;
-								fhead.z = aJoints[0].getPosition().z;
-
 								neck.x = aJoints[1].getPosition().x;
 								neck.y = aJoints[1].getPosition().y;
 								neck.z = aJoints[1].getPosition().z;
 
-								event_Now = eventDetect(fheadC, ftorsoC, fhead, ftorso, fhead_Ini, ftorso_Ini, neck);//(前一幀,後一幀,初始幀)
+								event_Now = eventDetect(fhead_Pre, ftorso_Pre, fhead, ftorso, fhead_Ini, ftorso_Ini, neck);//(前一幀,後一幀,初始幀)
 
+
+#pragma region 統計時間，依時間檢查動作是否正確，發生錯誤僅作顯示，對程式邏輯沒有影響
 								//統計時間
 								if (event_Now == INCIDENT_SIT_DOWN)
 									zuo = clock();
@@ -293,20 +295,22 @@ int main(int argc, char **argv)
 								if (event_Now == INCIDENT_STANDUP)
 									zanql = clock();
 
-								if (event_Now == INCIDENT_FALLDOWN && difftime(zuo, firsttime)>0 && difftime(zuoq, zuo) != 0)
+								//僅顯示出可能的錯誤資訊、沒有實際影響
+								if (event_Now == INCIDENT_FALLDOWN && difftime(zuo, firsttime) > 0 && difftime(zuo_Pre, zuo) != 0)
 								{
-									automendG(event_Now, difftime(die, zuo));
-									zuoq = zuo;
+									automendG(event_Now, difftime(die, zuo));//若"跌倒"與"坐下"事件大於10秒 則顯示警告
+									zuo_Pre = zuo;
 								}
 
-								if (event_Now == INCIDENT_STANDUP && difftime(zql, firsttime)>0 && difftime(zqlq, zql) != 0)
+								if (event_Now == INCIDENT_STANDUP && difftime(zql, firsttime) > 0 && difftime(zql_Pre, zql) != 0)
 								{
-									automendG(event_Now, difftime(zanql, zql));
-									zqlq = zql;
+									automendG(event_Now, difftime(zanql, zql));////若"站起來"與"坐起來"事件大於10秒 則顯示警告
+									zql_Pre = zql;
 								}
+#pragma endregion
 
-								
-#pragma region 用於調試的，直接顯示出事件偵測。
+
+#pragma region 用於調試的，直接顯示出事件偵測結果，對程式邏輯沒有影響。
 								if (event_Pre != event_Now)
 								{
 									if (event_Now == INCIDENT_NONE)
@@ -326,59 +330,35 @@ int main(int argc, char **argv)
 									if (event_Now == INCIDENT_LAYDOWN)
 										cout << "發生的事件: " << "躺下" << endl;
 								}
+								event_Pre = event_Now;
 #pragma endregion
 
 
-								event_Pre = event_Now;
-
 								if (weizhi == 0)
 								{
-									nextstate = firststate(event_Now);
-									if (nextstate != 0)
+									nextState = firststate(event_Now);
+									if (nextState != 0)
 										weizhi = 1;
-									if (nextstate != Nowstate)
-									{
-										if (nextstate == 1)
-											cout << "目前狀態: " << "站著" << endl;
-										if (nextstate == 2)
-											cout << "目前狀態: " << "走著" << endl;
-										if (nextstate == 3)
-											cout << "目前狀態: " << "跌倒" << endl;
-										if (nextstate == 4)
-											cout << "目前狀態: " << "坐著" << endl;
-										if (nextstate == 5)
-											cout << "目前狀態: " << "躺著" << endl;
-									}
-									Nowstate = nextstate;
+									displayState(nextState, nowState);
+									nowState = nextState;
 								}
 								else if (weizhi == 1)
 								{
 									if (event_Now != 0)
 									{
-										if (unnormalzhenc(event_Now, Nowstate) == 1);
+										if (unnormalzhenc(event_Now, nowState) == 1);
 										{
 											weizhi = 0;
-										} 
-										nextstate = stateTransfer(event_Now, Nowstate);
+										}
+										nextState = stateTransfer(event_Now, nowState);
 									}
-
-									if (nextstate != Nowstate)
-									{
-										if (nextstate == 1)
-											cout << "目前狀態: " << "站著" << endl;
-										if (nextstate == 2)
-											cout << "目前狀態: " << "走著" << endl;
-										if (nextstate == 3)
-											cout << "目前狀態: " << "跌倒" << endl;
-										if (nextstate == 4)
-											cout << "目前狀態: " << "坐著" << endl;
-										if (nextstate == 5)
-											cout << "目前狀態: " << "躺著" << endl;
-									}
-									Nowstate = nextstate;
+									displayState(nextState, nowState);
+									nowState = nextState;
 								}
-								ftorsoC = ftorso;
-								fheadC = fhead;
+								fhead_Pre = fhead;
+								ftorso_Pre = ftorso;
+#pragma endregion
+
 							}
 							cishu++;
 						}
@@ -388,8 +368,6 @@ int main(int argc, char **argv)
 
 			// show image
 			cv::imshow("User Image", mImageBGR);
-
-
 			mUserFrame.release();
 		}
 		else
